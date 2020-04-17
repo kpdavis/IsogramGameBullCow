@@ -79,7 +79,6 @@ void UBullCowCartridge::EndGame()
     if (HiddenWord == TEXT("GAMEOVER"))
     {
         PrintLine(TEXT("You Won! you Guessed all the Isograms\nwe have ready."));
-        PrintLine(TEXT("You Made it to Level: %i "), Level);
 
         UsedWordList.Empty();
         Level = 1;
@@ -94,12 +93,12 @@ void UBullCowCartridge::EndGame()
     {
         PrintLine(TEXT("Not quite"));
         PrintLine(TEXT("The Isogram was: %s "), *HiddenWord);
-        PrintLine(TEXT("You Made it to Level: %i "), Level);
+
         UsedWordList.Empty();
         IsogramsList.Empty();
         Level = 1;
     }
-
+    PrintLine(TEXT("You Made it to Level: %i "), Level);
     PrintLine(TEXT("\nPress enter to play again."));
 }
 
@@ -123,11 +122,11 @@ void UBullCowCartridge::ProcessGuess(const FString &PlayerGuess)
     {
         LossLife();
     }
-
-    int32 Bulls, Cows;
-    GetBullCows(PlayerGuess, Bulls, Cows);
-
-    PrintLine(TEXT("Bulls: %i   Cows: %i   Lives: %i"), Bulls, Cows, Lives);
+    if (!bGameOver)
+    {
+        FBullCowCount Score = GetBullCows(PlayerGuess);
+        PrintLine(TEXT("Bulls: %i   Cows: %i   Lives: %i"), Score.Bulls, Score.Cows, Lives);
+    }
 }
 
 void UBullCowCartridge::LossLife()
@@ -197,28 +196,59 @@ FString UBullCowCartridge::GetWord(const TArray<FString> &WordList)
     } while (true);
 }
 
-void UBullCowCartridge::GetBullCows(const FString &PlayerGuess, int32 &BullCount, int32 &CowCount) const
+FBullCowCount UBullCowCartridge::GetBullCows(const FString &PlayerGuess) const
 {
-    BullCount = 0;
-    CowCount = 0;
+    FBullCowCount Count;
+
     FString Guess = PlayerGuess.ToLower();
     FString Word = HiddenWord.ToLower();
-    //for every index PlayerGuess is the same as index HiddenWord: BullCount ++;
-    //for every index PlayerGuess that PlayerGuess[i] != HiddenWord[i] and HiddenWord Contains PlayerGuess[i])
-    for (int32 Index = 0; Index < Guess.Len(); Index++)
+
+    //Check if the FStrings length and set SLenght for high and low lengths
+    int32 SLenghtHigh, SLenghtLow;
+    if (Word.Len() >= Guess.Len())
     {
-        if (Guess[Index] == Word[Index])
+        SLenghtHigh = Word.Len();
+        SLenghtLow = Guess.Len();
+
+        for (int32 Index = 0; Index < SLenghtLow; Index++)
         {
-            BullCount++;
-            continue;
-        }
-        for (int32 HiddenIndex = 0; HiddenIndex < Guess.Len(); HiddenIndex++)
-        {
-            if (Guess[Index] == Word[HiddenIndex])
+            if (Guess[Index] == Word[Index])
             {
-                CowCount++;
-                break;
+                Count.Bulls++;
+                continue;
+            }
+            for (int32 HiddenIndex = 0; HiddenIndex < SLenghtHigh; HiddenIndex++)
+            {
+                if (Guess[Index] == Word[HiddenIndex])
+                {
+                    Count.Cows++;
+                    break;
+                }
             }
         }
     }
+    else if (Word.Len() < Guess.Len())
+    {
+        SLenghtHigh = Guess.Len();
+        SLenghtLow = Word.Len();
+
+        for (int32 Index = 0; Index < SLenghtLow; Index++)
+        {
+            if (Guess[Index] == Word[Index])
+            {
+                Count.Bulls++;
+                continue;
+            }
+            for (int32 HiddenIndex = 0; HiddenIndex < SLenghtHigh; HiddenIndex++)
+            {
+                if (Guess[HiddenIndex] == Word[Index])
+                {
+                    Count.Cows++;
+                    break;
+                }
+            }
+        }
+    }
+
+    return Count;
 }
